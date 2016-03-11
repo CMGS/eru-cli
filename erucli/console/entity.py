@@ -1,10 +1,11 @@
 # coding: utf-8
+import os
 
 import click
 from eruhttp import EruException
 
-from erucli.console.style import error, info
 from erucli.console.output import as_form
+from erucli.console.style import error, info
 
 
 @click.argument('name')
@@ -33,12 +34,18 @@ def create_network(ctx, name, cidr):
 
 @click.argument('addr')
 @click.argument('pod_name')
+@click.option('--public/--private', default=False)
+@click.option('--docker-cert-path', default='')
 @click.pass_context
-def create_host(ctx, addr, pod_name):
+def create_host(ctx, addr, pod_name, public, docker_cert_path=''):
     eru = ctx.obj['eru']
     try:
-        eru.create_host(addr, pod_name)
-        click.echo(info('Host created successfully'))
+        if docker_cert_path:
+            domain = addr.split(':')[0]
+            this_host_cert_path = os.path.join(docker_cert_path, domain)
+
+        eru.create_host(addr, pod_name, docker_cert_path=this_host_cert_path, is_public=public)
+        click.echo(info('Host {} assigned to {} successfully'.format(addr, pod_name)))
     except EruException as e:
         click.echo(error(e.message))
 
